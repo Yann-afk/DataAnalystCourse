@@ -1,41 +1,24 @@
 import pandas as pd
-import numpy as np
 
-# 1. Memuat dataset
+# 1. Membaca file CSV
 df = pd.read_csv('Buku1.csv')
 
-# 2. Hapus Duplikat
-df.drop_duplicates(inplace=True)
+# 2. Mengubah format kolom 'Order Date' menjadi format tanggal
+df['Order Date'] = pd.to_datetime(df['Order Date'])
 
-# 3. Tangani Missing Values (Data Kosong)
-# Mengisi Quantity yang kosong dengan 0
-df['Quantity'] = df['Quantity'].fillna(0)
-# Mengisi Sales (Pengganti UnitPrice) dengan nilai rata-rata
-df['Sales'] = df['Sales'].fillna(df['Sales'].mean())
-# Mengisi Profit yang kosong dengan 0 (Sebagai pengganti TotalPrice)
-df['Profit'] = df['Profit'].fillna(0)
+# 3. Menghitung total 'Sales' per Hari dan per Sub-Kategori
+# Kita menggunakan kolom 'Sub-Category' sesuai dengan header di data Anda
+rekap_sub_kategori = df.groupby(['Order Date', 'Sub-Category'])['Sales'].sum().reset_index()
 
-# 4. Standarisasi Format
-# Menyeragamkan teks pada kolom Region dan Product Name
-df['Region'] = df['Region'].astype(str).str.strip().str.title()
-df['Product Name'] = df['Product Name'].astype(str).str.strip().str.title()
+# 4. Mengurutkan tabel berdasarkan Tanggal, lalu Sub-Kategori secara alfabetis
+rekap_sub_kategori = rekap_sub_kategori.sort_values(by=['Order Date', 'Sub-Category'])
 
-# 5. Hapus Outlier yang Tidak Masuk Akal
-# Menggunakan kolom Sales untuk filter harga
-df = df[(df['Sales'] > 0) & (df['Sales'] < 20000)]
+# 5. Menampilkan 10 baris pertama di layar sebagai preview
+print("--- Preview 10 Baris Pertama ---")
+print(rekap_sub_kategori.head(10))
 
-# 6. Perbaiki Tipe Data
-# Memastikan kolom numerik benar-benar angka
-df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
-df['Sales'] = pd.to_numeric(df['Sales'], errors='coerce')
-df['Discount'] = pd.to_numeric(df['Discount'], errors='coerce')
+# 6. Menyimpan hasil rekap lengkap ke dalam file CSV baru
+nama_file_baru = 'Rekap_Harian_Per_Sub_Kategori.csv'
+rekap_sub_kategori.to_csv(nama_file_baru, index=False)
 
-# Memperbaiki tipe data tanggal (Order Date & Ship Date)
-df['Order Date'] = pd.to_datetime(df['Order Date'], errors='coerce')
-df['Ship Date'] = pd.to_datetime(df['Ship Date'], errors='coerce')
-
-# 7. Simpan hasil
-df.to_csv('Data_Cleaned_Format.csv', index=False)
-
-print("Proses cleaning selesai!")
-print(df.info())
+print(f"\nSelesai! Seluruh data per tanggal dan sub-kategori telah berhasil disimpan di: {nama_file_baru}")
