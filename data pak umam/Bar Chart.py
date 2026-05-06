@@ -1,29 +1,41 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-# 1. Memuat data
+# 1. Muat Data
 df = pd.read_csv('Data_Cleaned_Format.csv')
 
-# 2. Menghitung total penjualan (Quantity) per Produk
-sales_by_product = df.groupby('Product')['Quantity'].sum().sort_values(ascending=False)
+# Set Tema
+sns.set_theme(style="whitegrid")
 
-# 3. Membuat visualisasi
+# --- 1. BAR CHART: JUMLAH UNIT TERJUAL PER KATEGORI ---
 plt.figure(figsize=(10, 6))
-bars = plt.bar(sales_by_product.index, sales_by_product.values, color='skyblue', edgecolor='navy')
+qty_category = df.groupby('Category')['Quantity'].sum().reset_index().sort_values('Quantity', ascending=False)
 
-# 4. Menambahkan angka (label) di atas setiap bar
-for bar in bars:
-    yval = bar.get_height()
-    plt.text(bar.get_x() + bar.get_width()/2, yval + 0.5, int(yval), 
-             ha='center', va='bottom', fontsize=11, fontweight='bold')
-
-# 5. Menambah detail grafik
-plt.title('Total Penjualan Berdasarkan Produk', fontsize=14)
-plt.xlabel('Produk', fontsize=12)
-plt.ylabel('Total Kuantitas Terjual', fontsize=12)
-plt.xticks(rotation=45)
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-
-# Menampilkan grafik
-plt.tight_layout()
+sns.barplot(x='Category', y='Quantity', data=qty_category, palette='viridis')
+plt.title('Total Unit Terjual per Kategori', fontsize=14)
+plt.ylabel('Jumlah Quantity')
 plt.show()
+
+# --- 2. BAR CHART: JUMLAH UNIT TERJUAL PER WILAYAH ---
+plt.figure(figsize=(10, 6))
+qty_region = df.groupby('Region')['Quantity'].sum().reset_index().sort_values('Quantity', ascending=False)
+
+sns.barplot(x='Region', y='Quantity', data=qty_region, palette='magma')
+plt.title('Total Unit Terjual per Wilayah (Region)', fontsize=14)
+plt.ylabel('Jumlah Quantity')
+plt.show()
+
+# --- 3. RINGKASAN ANGKA ---
+total_qty = df['Quantity'].sum()
+avg_qty = df['Quantity'].mean()
+
+print("\n" + "="*40)
+print(f"ANALISIS VOLUME PENJUALAN (QUANTITY)")
+print("="*40)
+print(f"Total seluruh barang terjual : {int(total_qty)} unit")
+print(f"Rata-rata barang per order   : {avg_qty:.2f} unit")
+print("-" * 40)
+print("\nDetail per Kategori:")
+print(qty_category.to_string(index=False))
+print("\n" + "="*40)
