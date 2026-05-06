@@ -1,34 +1,36 @@
 import pandas as pd
 
 # 1. Membaca file CSV Anda
-# Pastikan file 'Buku1.csv' berada di folder yang sama dengan script Python ini
-df = pd.read_csv('Buku1.csv')
+df = pd.read_csv('./data pak umam/Buku1.csv')
 
 # 2. Mengubah format kolom 'Order Date' menjadi format tanggal (datetime)
-# Ini penting agar data bisa diurutkan secara kronologis (dari Januari hingga Desember)
 df['Order Date'] = pd.to_datetime(df['Order Date'])
 
-# 3. Membuat tabel rekap (Pivot)
-# Menghitung total 'Sales' (pendapatan) per hari untuk setiap 'Category'
-tabel_pendapatan = pd.pivot_table(
+# --- TAMBAHAN: Membuat kolom Bulan ---
+# Kita buat kolom baru 'Order Month' agar data dikelompokkan per bulan (Tahun-Bulan)
+df['Order Month'] = df['Order Date'].dt.to_period('M')
+
+# 3. Membuat tabel rekap (Pivot) Bulanan
+# Gunakan 'Order Month' sebagai index, bukan 'Order Date'
+tabel_pendapatan_bulanan = pd.pivot_table(
     df, 
     values='Sales', 
-    index='Order Date', 
+    index='Order Month', 
     columns='Category', 
     aggfunc='sum', 
-    fill_value=0  # Mengisi angka 0 jika tidak ada penjualan di kategori tersebut pada hari itu
+    fill_value=0
 )
 
-# 4. Mengurutkan tabel berdasarkan tanggal dari yang paling awal
-tabel_pendapatan = tabel_pendapatan.sort_index()
+# 4. Mengurutkan tabel berdasarkan bulan
+tabel_pendapatan_bulanan = tabel_pendapatan_bulanan.sort_index()
 
-# 5. Menampilkan 10 hari pertama di layar sebagai preview
-print("--- Preview 10 Hari Pertama ---")
-print(tabel_pendapatan.head(10))
+# 5. Menampilkan preview di layar
+print("--- Rekap Pendapatan Per Bulan ---")
+print(tabel_pendapatan_bulanan)
 
-# 6. Menyimpan hasil rekap lengkap (ribuan baris) ke dalam file CSV baru
-nama_file_baru = 'Rekap_Pendapatan_Harian.csv'
-tabel_pendapatan.to_csv(nama_file_baru)
+# 6. Menyimpan hasil ke file CSV baru
+nama_file_baru = 'Rekap_Pendapatan_Bulanan.csv'
+# Catatan: Kita gunakan .to_timestamp() agar format tanggal di Excel lebih ramah dibaca
+tabel_pendapatan_bulanan.to_timestamp().to_csv(nama_file_baru)
 
-print(f"\nSelesai! Seluruh data per tanggal telah berhasil disimpan di file: {nama_file_baru}")
-print("Anda bisa membuka file tersebut menggunakan Excel untuk melihat daftar lengkapnya.")
+print(f"\nSelesai! Data bulanan telah disimpan di: {nama_file_baru}")

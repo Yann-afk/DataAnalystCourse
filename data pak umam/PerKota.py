@@ -1,23 +1,56 @@
 import pandas as pd
+import os
 
-# 1. Membaca file CSV
-df = pd.read_csv('Buku1.csv')
+# 1. Penanganan Lokasi File
+file_input = './data pak umam/Buku1.csv'
+file_output = 'Top10_Kota_Rekap_Horizontal.csv'
 
-# 2. Mengubah format kolom 'Order Date' menjadi format tanggal
-df['Order Date'] = pd.to_datetime(df['Order Date'])
+if not os.path.exists(file_input):
+    print(f"ALERT: File '{file_input}' tidak ditemukan.")
+else:
+    print("Membaca data...")
+    df = pd.read_csv(file_input)
 
-# 3. Menghitung total 'Sales' per Hari, per Kota (City), dan per Kategori
-rekap_kota = df.groupby(['Order Date', 'City', 'Category'])['Sales'].sum().reset_index()
+    # 2. Data Cleaning
+    df['Order Date'] = pd.to_datetime(df['Order Date'], errors='coerce')
+    df['Sales'] = pd.to_numeric(df['Sales'], errors='coerce')
+    df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
+    df = df.dropna(subset=['Order Date', 'City', 'Category', 'Sales', 'Quantity'])
 
-# 4. Mengurutkan tabel berdasarkan Tanggal, lalu Kota secara alfabetis
-rekap_kota = rekap_kota.sort_values(by=['Order Date', 'City', 'Category'])
+    # --- TAMBAHAN: MENCARI TOP 10 KOTA ---
+    # Hitung total sales per kota
+    top_10_cities = df.groupby('City')['Sales'].sum().nlargest(10).index
+    
+    # Filter dataframe asli agar hanya berisi 10 kota tersebut
+    df = df[df['City'].isin(top_10_cities)]
+    # -------------------------------------
 
-# 5. Menampilkan 10 baris pertama di layar sebagai preview
-print("--- Preview 10 Baris Pertama ---")
-print(rekap_kota.head(10))
+    # 3. Membuat kolom format Bulan (Tahun-Bulan)
+    df['Order Month'] = df['Order Date'].dt.strftime('%Y-%m')
 
-# 6. Menyimpan hasil rekap lengkap ke dalam file CSV baru
-nama_file_baru = 'Rekap_Harian_Per_Kota.csv'
-rekap_kota.to_csv(nama_file_baru, index=False)
+    # 4. Membuat Pivot Table
+    print("Memproses rekapitulasi horizontal untuk Top 10 Kota...")
+    rekap_pivot = pd.pivot_table(
+        df, 
+        values=['Sales', 'Quantity'], 
+        index=['City', 'Category'], 
+        columns='Order Month',      
+        aggfunc='sum', 
+        fill_value=0 
+    )
 
-print(f"\nSelesai! Seluruh data per tanggal dan kota telah berhasil disimpan di: {nama_file_baru}")
+    # 5. Merapikan Header Kolom
+    rekap_pivot.columns = [f"{month} ({val})" for val, month in rekap_pivot.columns]
+    rekap_pivot = rekap_pivot.reset_index()
+
+    # 6. Menyimpan ke CSV
+    rekap_pivot.to_csv(file_output, index=False)
+
+    print("-" * 30)
+    print(f"BERHASIL!")
+    print(f"Hanya data dari 10 kota dengan penjualan tertinggi yang diproses.")
+    print(f"Hasil disimpan di: {file_output}")
+    print("-" * 30)
+    
+    print("\nPreview Top 10 Kota (5 Baris Pertama):")
+    print(rekap_pivot.head())
